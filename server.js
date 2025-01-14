@@ -35,7 +35,7 @@ app.get('/api/products/:projectName', (req, res) => {
   
   // 构造查询 SQL 语句
   const query = `
-      SELECT p.product_name, p.product_price
+      SELECT p.id p.product_name, p.product_price
       FROM product p
       JOIN project pr ON p.project_id = pr.project_id
       WHERE pr.project_name = ?`;
