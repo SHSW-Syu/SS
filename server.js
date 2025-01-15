@@ -41,7 +41,7 @@ SELECT
     p.product_price,
     t.topping_id,
     t.topping_name,
-    t.topping_unit_price
+    t.topping_price
 FROM 
     product p
 JOIN 
