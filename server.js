@@ -39,10 +39,11 @@ SELECT
     p.id,
     p.product_name,
     p.product_price,
-    p.topping_price,
+    p.topping_group,
     t.topping_id,
     t.topping_name,
-    t.topping_price
+    t.topping_price,
+    t.topping_group
 FROM 
     product p
 JOIN 
