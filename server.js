@@ -39,6 +39,7 @@ SELECT
     p.id,
     p.product_name,
     p.product_price,
+    p.topping_price
     t.topping_id,
     t.topping_name,
     t.topping_price
