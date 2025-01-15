@@ -34,11 +34,26 @@ app.get('/api/products/:projectName', (req, res) => {
   const { projectName } = req.params;
   
   // 构造查询 SQL 语句
-  const query = `
-      SELECT p.id, p.product_name, p.product_price
-      FROM product p
-      JOIN project pr ON p.project_id = pr.project_id
-      WHERE pr.project_name = ?`;
+const query = `
+SELECT 
+    p.id,
+    p.product_name,
+    p.product_price,
+    t.topping_id,
+    t.topping_name,
+    t.topping_unit_price
+FROM 
+    product p
+JOIN 
+    project pr 
+ON 
+    p.project_id = pr.project_id
+LEFT JOIN 
+    topping t
+ON 
+    p.topping_group = t.topping_group
+WHERE 
+    pr.project_name = ?`;
 
   // 执行查询
   db.execute(query, [projectName], (err, results) => {
