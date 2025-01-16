@@ -40,6 +40,7 @@ SELECT
     p.product_name,
     p.product_price,
     p.topping_group,
+    p.topping_limit,
     JSON_ARRAYAGG(
         JSON_OBJECT(
             'topping_id', t.topping_id,
