@@ -40,10 +40,13 @@ SELECT
     p.product_name,
     p.product_price,
     p.topping_group,
-    t.topping_id,
-    t.topping_name,
-    t.topping_price,
-    t.topping_group
+    JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'topping_id', t.topping_id,
+            'topping_name', t.topping_name,
+            'topping_price', t.topping_price
+        )
+    ) as toppings
 FROM 
     product p
 JOIN 
@@ -55,7 +58,9 @@ LEFT JOIN
 ON 
     p.topping_group = t.topping_group
 WHERE 
-    pr.project_name = ?`;
+    pr.project_name = ?
+GROUP BY 
+    p.id, p.product_name, p.product_price, p.topping_group`;
 
   // 执行查询
   db.execute(query, [projectName], (err, results) => {
