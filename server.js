@@ -60,11 +60,16 @@ app.get('/api/products/:projectName', async (req, res) => {
 
 // 处理订单
 app.post('/receive', async (req, res) => {
+    console.log('🔹 Received request body:', req.body); // 打印收到的数据
+
     const { projectId, userId, totalPrice } = req.body;
 
-    if (!projectId || !userId ) {
+    if (!projectId || !userId || !totalPrice) {
+        console.error('🚨 Missing or invalid data:', req.body);
         return res.status(400).json({ error: 'Invalid order data' });
     }
+
+    console.log('✅ Valid gorder data:', { projectId, userId, totalPrice });
 
     const connection = await pool.getConnection();
     try {
@@ -76,16 +81,14 @@ app.post('/receive', async (req, res) => {
             [projectId, userId, totalPrice, 0, 0]
         );
         const orderId = orderResult.insertId;
-
-
-
+        console.log('✅ Order inserted, orderId:', orderId);
 
         await connection.commit();
         res.json({ success: true, orderId });
     } catch (error) {
         await connection.rollback();
-        console.error('Error processing order:', error);
-        res.status(500).json({ error: 'Failed to process order' });
+        console.error('🚨 Error processing order:', error.stack); // 打印错误堆栈
+        res.status(500).json({ error: 'Failed to process order', details: error.stack });
     } finally {
         connection.release();
     }
