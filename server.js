@@ -58,48 +58,30 @@ app.get('/api/products/:projectName', async (req, res) => {
     }
 });
 
-// 处理订单
-app.post('/receive', async (req, res) => {
-    const { projectId, userId, totalPrice, items } = req.body;
+app.get('/api/orders', async (req, res) => {
+    const query = `
+    SELECT 
+        g.user_id, 
+        p.product_name,
+        t1.topping_name AS topping1_name,
+        t2.topping_name AS topping2_name,
+        i.quantity
+    FROM item i
+    JOIN gorder g ON i.order_id = g.order_id  -- 通过 order_id 关联 gorder 表
+    JOIN product p ON i.product_id = p.id AND g.project_id = p.project_id  -- 通过 product_id 和 project_id 关联 product 表
+    LEFT JOIN topping t1 ON i.topping_id_1 = t1.topping_id AND g.project_id = t1.project_id  -- 关联 topping1
+    LEFT JOIN topping t2 ON i.topping_id_2 = t2.topping_id AND g.project_id = t2.project_id  -- 关联 topping2
+    ORDER BY g.user_id, i.order_id`;
 
-    if (!projectId || !userId || !items || items.length === 0) {
-        return res.status(400).json({ error: 'Invalid order data' });
-    }
-
-    const connection = await pool.getConnection();
     try {
-        await connection.beginTransaction();
-
-        // 插入订单
-        const [orderResult] = await connection.execute(
-            'INSERT INTO gorder (project_id, user_id, total_price, status, cashier) VALUES (?, ?, ?, ?, ?)',
-            [userId, totalPrice, projectId, 0, 0]
-        );
-        const orderId = orderResult.insertId;
-
-        // 插入订单详情
-        const orderDetailsQuery =
-            'INSERT INTO item (order_id, product_id, topping1_id, topping2_id, quantity) VALUES ?';
-        const orderDetailsValues = items.map(item => [
-            orderId,
-            item.productId,
-            item.topping1Id || null,
-            item.topping2Id || null,
-            item.quantity
-        ]);
-
-        await connection.query(orderDetailsQuery, [orderDetailsValues]);
-
-        await connection.commit();
-        res.json({ success: true, orderId });
+        const [results] = await pool.query(query);
+        res.json(results);
     } catch (error) {
-        await connection.rollback();
-        console.error('Error processing order:', error);
-        res.status(500).json({ error: 'Failed to process order' });
-    } finally {
-        connection.release();
+        console.error('获取订单数据失败:', error);
+        res.status(500).json({ message: '获取订单数据失败', error: error.stack });
     }
 });
+
 // 启动服务器
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at http://localhost:${port}`);
