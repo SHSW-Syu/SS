@@ -60,9 +60,9 @@ app.get('/api/products/:projectName', async (req, res) => {
 
 // 处理订单
 app.post('/receive', async (req, res) => {
-    const { projectId, userId, totalPrice, items } = req.body;
+    const { projectId, userId, totalPrice } = req.body;
 
-    if (!projectId || !userId || !items || items.length === 0) {
+    if (!projectId || !userId ) {
         return res.status(400).json({ error: 'Invalid order data' });
     }
 
@@ -79,7 +79,6 @@ app.post('/receive', async (req, res) => {
 
 
 
-        await connection.query(orderDetailsQuery, [orderDetailsValues]);
 
         await connection.commit();
         res.json({ success: true, orderId });
