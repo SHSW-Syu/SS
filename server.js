@@ -8,7 +8,7 @@ const port = process.env.PORT || 3003;
 
 // 允许跨域请求
 app.use(cors({
-    origin: ['http://localhost:3000'],
+    origin: '*',
     methods: 'GET,POST,PUT,DELETE',
     allowedHeaders: 'Content-Type'
 }));
