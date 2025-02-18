@@ -8,8 +8,8 @@ const port = process.env.PORT || 3003; // 使用 Railway 提供的端口或默�
 
 // 使用中间件
 app.use(cors({
-  origin: '*', // 允许所有来源
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // 允许的请求方法
+    origin: '*', // 允许所有来源
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // 允许的请求方法
 }));
 app.use(bodyParser.json());
 
@@ -31,10 +31,10 @@ db.connect((err) => {
 });
 
 app.get('/api/products/:projectName', (req, res) => {
-  const { projectName } = req.params;
-  
-  // 构造查询 SQL 语句
-const query = `
+    const { projectName } = req.params;
+
+    // 构造查询 SQL 语句
+    const query = `
 SELECT 
     p.id,
     p.product_name,
@@ -63,18 +63,59 @@ WHERE
 GROUP BY 
     p.id, p.product_name, p.product_price, p.topping_group`;
 
-  // 执行查询
-  db.execute(query, [projectName], (err, results) => {
-      if (err) {
-          console.error('查询失败:', err);
-          return res.status(500).json({ message: '获取商品数据失败' });
-      }
+    // 执行查询
+    db.execute(query, [projectName], (err, results) => {
+        if (err) {
+            console.error('查询失败:', err);
+            return res.status(500).json({ message: '获取商品数据失败' });
+        }
 
-      // 返回查询结果
-      res.json(results);
-  });
+        // 返回查询结果
+        res.json(results);
+    });
 });
 
+app.post('/receive', async (req, res) => {
+    const { projectId, userId, totalPrice, items } = req.body;
+
+    if (!projectId || !userId || !items || items.length === 0) {
+        return res.status(400).json({ error: 'Invalid order data' });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 插入订单
+        const [orderResult] = await connection.execute(
+            'INSERT INTO gorder (project_id, user_id, total_price, status, cashier) VALUES (?, ?, ?, ?, ?)',
+            [userId, totalPrice, projectId]
+        );
+        const orderId = orderResult.insertId;
+
+        // 插入订单详情
+        const orderDetailsQuery =
+            'INSERT INTO item (order_id, product_id, topping1_id, topping2_id, quantity) VALUES ?';
+        const orderDetailsValues = items.map(item => [
+            orderId,
+            item.productId,
+            item.quantity,
+            item.topping1Id || null,
+            item.topping2Id || null,
+        ]);
+
+        await connection.query(orderDetailsQuery, [orderDetailsValues]);
+
+        await connection.commit();
+        res.json({ success: true, orderId });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error processing order:', error);
+        res.status(500).json({ error: 'Failed to process order' });
+    } finally {
+        connection.release();
+    }
+});
 
 // 启动服务器
 app.listen(port, '0.0.0.0', () => {
