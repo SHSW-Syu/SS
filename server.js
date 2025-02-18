@@ -87,13 +87,10 @@ app.post('/receive', async (req, res) => {
         res.json({ success: true, orderId });
     } catch (error) {
         await connection.rollback();
-        console.error('🚨 Error processing order:', error.stack);  // 记录错误堆栈
-    
-        // 发送详细错误信息给前端
-        res.status(500).json({ 
-            error: 'Failed to process order', 
-            details: error.stack  // 将错误堆栈发送到前端
-        });
+        console.error('🚨 Error processing order:', error.stack); // 打印错误堆栈
+        res.status(500).json({ error: 'Failed to process order', details: error.stack });
+    } finally {
+        connection.release();
     }
 });
 
