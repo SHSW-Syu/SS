@@ -16,9 +16,9 @@ app.use(bodyParser.json());
 
 // 创建 MySQL 连接池
 const pool = mysql.createPool({
-    host: process.env.DB_HOST, 
-    user: process.env.DB_USER, 
-    password: process.env.DB_PASSWORD, 
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
@@ -83,9 +83,9 @@ app.post('/receive', async (req, res) => {
         const orderDetailsValues = items.map(item => [
             orderId,
             item.productId,
-            item.quantity,
             item.topping1Id || null,
             item.topping2Id || null,
+            item.quantity
         ]);
 
         await connection.query(orderDetailsQuery, [orderDetailsValues]);
