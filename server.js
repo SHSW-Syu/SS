@@ -55,12 +55,12 @@ app.get('/api/products/:projectName', async (req, res) => {
                     )
                 ) as toppings
             FROM product p
-            LEFT JOIN topping t ON p.topping_group = t.topping_group
+            LEFT JOIN topping t ON p.topping_group = t.topping_group AND t.project_id = ?
             WHERE p.project_id = ?
             GROUP BY p.id, p.product_name, p.product_price, p.topping_group;
         `;
 
-        const [productResults] = await pool.query(query, [projectId]);
+        const [productResults] = await pool.query(query, [projectId, projectId]);
 
         if (productResults.length === 0) {
             return res.status(404).json({ message: '未找到与该项目关联的商品数据' });
