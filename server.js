@@ -29,45 +29,50 @@ const pool = mysql.createPool({
 app.get('/api/products/:projectName', async (req, res) => {
     const { projectName } = req.params;
 
-    // 查询语句
-    const query = `
-        SELECT 
-            p.id,
-            p.product_name,
-            p.product_price,
-            p.topping_group,
-            p.topping_limit,
-            JSON_ARRAYAGG(
-                JSON_OBJECT(
-                    'topping_id', t.topping_id,
-                    'topping_name', t.topping_name,
-                    'topping_price', t.topping_price
-                )
-            ) as toppings
-        FROM product p
-        JOIN project pr ON p.project_id = pr.project_id
-        LEFT JOIN topping t ON p.topping_group = t.topping_group
-        WHERE pr.project_name = ?
-        GROUP BY p.id, p.product_name, p.product_price, p.topping_group;
-    `;
-
     try {
-        // 执行查询
-        const [results] = await pool.query(query, [projectName]);
+        // 第一步：通过 project_name 查询 project_id
+        const [projectResults] = await pool.query('SELECT project_id FROM project WHERE project_name = ?', [projectName]);
 
-        // 检查是否有数据
-        if (results.length === 0) {
-            return res.status(404).json({ message: '未找到与该项目名称关联的商品数据' });
+        if (projectResults.length === 0) {
+            return res.status(404).json({ message: '未找到对应的项目' });
+        }
+
+        const projectId = projectResults[0].project_id;
+
+        // 第二步：通过 project_id 查询商品和小料数据
+        const query = `
+            SELECT 
+                p.id,
+                p.product_name,
+                p.product_price,
+                p.topping_group,
+                p.topping_limit,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'topping_id', t.topping_id,
+                        'topping_name', t.topping_name,
+                        'topping_price', t.topping_price
+                    )
+                ) as toppings
+            FROM product p
+            LEFT JOIN topping t ON p.topping_group = t.topping_group
+            WHERE p.project_id = ?
+            GROUP BY p.id, p.product_name, p.product_price, p.topping_group;
+        `;
+
+        const [productResults] = await pool.query(query, [projectId]);
+
+        if (productResults.length === 0) {
+            return res.status(404).json({ message: '未找到与该项目关联的商品数据' });
         }
 
         // 返回查询结果
-        res.json(results);
+        res.json(productResults);
     } catch (err) {
         console.error('查询失败:', err);
         res.status(500).json({ message: '获取商品数据失败', error: err.message });
     }
 });
-
 app.get('/api/orders', async (req, res) => {
     const query = `
     SELECT 
